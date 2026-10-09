@@ -1,55 +1,50 @@
-# Table data extractor into CSV from PDF of scanned images
-This is a basic but usable Example of python script that allows to convert a pdf of scanned documents (images), 
-extract tables from each pdf page using image processing,
-and using OCR extract the table data into into one CSV file, while keeping correct table structure.
+# FNB Bank Statement PDF -> CSV
 
-This code has quite a bit assumptions (the table is largest object in the pages),
-but it can be useful to convert printed excel tables back into digital copy
+This project converts FNB Easy Account statement PDFs into a transaction CSV that matches the supplied transaction-history format.
 
-
-### Prerequisites
-
-install the following Packages (versions the script was developed on)
-
-* python 3.6 
-* tesseract-ocr 4.0.0
-* opencv 3.4.4
-* pip requirements.txt
-
-usage:
-```
-python pdf-to-csv-cv.py -p test.pdf
+```csv
+Date,Amount,Balance,Description
 ```
 
-this will create test.pdf.csv output file
+## Why this approach
 
-### Algorithm
+The original `vitali84/pdf-to-csv-table-extactor` project is designed primarily for scanned PDFs using image processing and OCR. The supplied FNB statement contains a machine-readable text/table layer, so this implementation uses `pdfplumber` first for better accuracy and lower complexity.
 
+## Convert one PDF
 
-## 1. Extract image from each pdf page
-   ![original](images/original.jpg)
+```bash
+python -m venv .venv
+# Windows
+.venv\\Scripts\\activate
+pip install -r requirements.txt
+python src/bank_pdf_to_csv.py "EASY ACCOUNT 25.pdf" -o transactions.csv
+```
 
-## 2. Threshold + blur + bitwise not image:
-   ![thresholded](images/thresholded.jpg)
+## Convert a folder of PDFs
 
-## 3. find largest contour with largest area (hopefully our table), fix perspective using four point transform
-   ![extracted](images/extracted.jpg)
+```bash
+python src/bank_pdf_to_csv.py ./statements -o transactions.csv
+```
 
-## 4. find rows and columns, using morphological operations with custom kernels
-   ![horizontal_vertical_contours](images/horizontal_vertical_contours.jpg)
+## Output convention
 
-## 5. use tesseract ocr, for text extraction from each cell
+- Credits become positive amounts (`199.00`).
+- Debits become negative amounts (`-199.00`).
+- Balance is stored as the numeric value shown by the bank.
+- Core columns match the existing transaction-history CSV so multiple statements can later be merged into one master history.
 
-## 6. throw all the extracted data into one large CSV, while keeping the original table structure
-   ![result](images/result.jpg)
-   
-## Notes
-   The performance is mostly affected by the OCR package, both speed and accuracy, feel free to play with tesseract flags  
+## Current scope
 
-## Author
-  *Vitali Mogilevsky*
-  
-## License
-   wtfpl - see the [LICENSE](LICENSE) file for details
+This first version is tailored to the FNB Easy Account statement layout. Statements whose transaction descriptions are not exposed cleanly in the PDF text layer may need an OCR/layout fallback profile.
 
-    
+## Project structure
+
+```text
+PDF2CSV/
+├── README.md
+├── requirements.txt
+├── src/
+│   └── bank_pdf_to_csv.py
+└── examples/
+    └── EASY_ACCOUNT_25_transactions.csv
+```
